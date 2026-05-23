@@ -1,31 +1,24 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
-from datetime import datetime
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional
+from config import settings
+
 
 class SearchRequest(BaseModel):
-    """Request model for search endpoint"""
-    niche: str = Field(..., description="Business niche (e.g., restaurants, plumbers)")
-    city: str = Field(..., description="City to search in")
-    limit: int = Field(50, description="Maximum number of results to return")
+    query: str = Field(..., min_length=2, description="Raw user query, e.g. 'restaurants in Hyderabad'")
+    niche: Optional[str] = Field(None, description="Parsed niche (overrides query parsing)")
+    city: Optional[str] = Field(None, description="Parsed city (overrides query parsing)")
+    limit: int = Field(default=settings.default_result_limit, ge=1, le=50)
 
-class SearchResult(BaseModel):
-    """Single search result from Overpass API"""
-    name: str
-    lat: float
-    lon: float
-    website: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    city: str
+    @field_validator("query")
+    @classmethod
+    def strip_query(cls, v: str) -> str:
+        return v.strip()
+
 
 class SearchResponse(BaseModel):
-    """Response model for search endpoint"""
-    results: List[SearchResult]
-    total_count: int
     query: str
-    executed_at: datetime
-
-class SearchHistoryResponse(BaseModel):
-    """Response model for search history endpoint"""
-    searches: List[dict]
-    total_count: int
+    niche: str
+    city: str
+    results_count: int
+    duration_ms: int
+    leads: list

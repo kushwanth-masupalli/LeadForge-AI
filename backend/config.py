@@ -1,54 +1,38 @@
-import os
 from pydantic_settings import BaseSettings
+from typing import Literal
+
 
 class Settings(BaseSettings):
-    # AI Provider Configuration
-    AI_PROVIDER: str = "gemini"  # "gemini" or "openrouter"
-    
-    # Gemini Configuration
-    GEMINI_API_KEY: str = ""
-    
-    # OpenRouter Configuration
-    OPENROUTER_API_KEY: str = ""
-    OPENROUTER_MODEL: str = "meta-llama/llama-3-8b-instruct:free"
-    
-    # Database Configuration
-    MONGODB_URI: str = ""
-    MONGODB_DB_NAME: str = "leadforge"
-    
-    # Server Configuration
-    BACKEND_PORT: int = 8000
-    
+    # MongoDB
+    mongodb_uri: str = "mongodb://127.0.0.1:27017"
+    mongodb_db_name: str = "leadforge"
+
+    # AI Provider
+    ai_provider: Literal["gemini", "openrouter"] = "gemini"
+
+    # Gemini
+    gemini_api_key: str = ""
+
+    # OpenRouter
+    openrouter_api_key: str = ""
+    openrouter_model: str = "meta-llama/llama-3-8b-instruct:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1/chat/completions"
+
+    # Overpass
+    overpass_url: str = "https://overpass-api.de/api/interpreter"
+    overpass_radius_m: int = 10000  # 10km default (overpass.py handles retry at 20km)
+
+    # Analysis
+    request_timeout_s: int = 15
+    enable_playwright: bool = False
+    enable_lighthouse: bool = False
+
+    # Search
+    default_result_limit: int = 20
+
     class Config:
         env_file = ".env"
-        case_sensitive = True
+        env_file_encoding = "utf-8"
+
 
 settings = Settings()
-
-def validate_settings():
-    """Validate required settings are set"""
-    if not settings.MONGODB_URI:
-        raise ValueError("MONGODB_URI is required")
-    
-    if settings.AI_PROVIDER == "gemini" and not settings.GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is required when AI_PROVIDER=gemini")
-    
-    if settings.AI_PROVIDER == "openrouter" and not settings.OPENROUTER_API_KEY:
-        raise ValueError("OPENROUTER_API_KEY is required when AI_PROVIDER=openrouter")
-
-def get_ai_provider():
-    """Get the configured AI provider"""
-    return settings.AI_PROVIDER
-
-def get_ai_config():
-    """Get AI configuration based on provider"""
-    if settings.AI_PROVIDER == "gemini":
-        return {
-            "api_key": settings.GEMINI_API_KEY,
-            "model": "gemini-1.5-flash"
-        }
-    else:
-        return {
-            "api_key": settings.OPENROUTER_API_KEY,
-            "model": settings.OPENROUTER_MODEL
-        }

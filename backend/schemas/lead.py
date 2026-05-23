@@ -1,52 +1,65 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, model_validator, ConfigDict
+from typing import Optional, List, Any
 from datetime import datetime
 
-class SearchRequest(BaseModel):
-    """Request model for search endpoint"""
-    niche: str = Field(..., description="Business niche (e.g., restaurants, plumbers)")
-    city: str = Field(..., description="City to search in")
-    limit: int = Field(50, description="Maximum number of results to return")
-    
-class SearchResponse(BaseModel):
-    """Response model for search endpoint"""
-    leads: List[dict]
-    total_count: int
-    query: str
-    executed_at: datetime
 
 class LeadResponse(BaseModel):
-    """Response model for lead endpoint"""
-    id: str
-    company_name: str
-    website: Optional[str]
-    email: Optional[str]
-    phone: Optional[str]
-    address: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str = ""
+    name: str
     city: str
     niche: str
-    score: int
-    https: bool
-    mobile_friendly: bool
-    has_seo_tags: bool
-    social_links: List[str]
-    weaknesses: List[str]
-    outreach_email: Optional[str]
-    outreach_dm: Optional[str]
-    is_saved: bool
-    created_at: datetime
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    address: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
 
-class LeadUpdateRequest(BaseModel):
-    """Request model for updating lead"""
-    is_saved: Optional[bool] = None
+    # Analysis
+    loads: Optional[bool] = None
+    https: Optional[bool] = None
+    response_time_ms: Optional[int] = None
+    has_title: Optional[bool] = None
+    has_meta_description: Optional[bool] = None
+    has_h1: Optional[bool] = None
+    has_og_tags: Optional[bool] = None
+    has_viewport_meta: Optional[bool] = None
+    mobile_friendly: Optional[bool] = None
+    social_links: List[str] = []
+
+    # Lighthouse
+    lighthouse_seo: Optional[float] = None
+    lighthouse_performance: Optional[float] = None
+    lighthouse_accessibility: Optional[float] = None
+
+    # Scoring
+    score: Optional[int] = None
+    weaknesses: List[str] = []
+
+    # Outreach
     outreach_email: Optional[str] = None
     outreach_dm: Optional[str] = None
+    outreach_pitch: Optional[str] = None
 
-class AnalyticsResponse(BaseModel):
-    """Response model for analytics endpoint"""
-    total_leads: int
-    saved_leads: int
-    average_score: float
-    recent_searches: List[dict]
-    top_cities: List[dict]
-    top_niches: List[dict]
+    # Meta
+    saved: bool = False
+    analyzed: bool = False
+    outreach_generated: bool = False
+    created_at: Optional[datetime] = None
+
+    @staticmethod
+    def from_document(doc) -> "LeadResponse":
+        try:
+            data = doc.model_dump()
+        except AttributeError:
+            data = doc.dict()
+        data["id"] = str(doc.id)
+        return LeadResponse(**data)
+
+
+class LeadUpdate(BaseModel):
+    saved: Optional[bool] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None

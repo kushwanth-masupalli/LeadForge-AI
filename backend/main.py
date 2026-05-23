@@ -1,55 +1,39 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import uvicorn
-import os
-from datetime import datetime
-from api.routes import search
+from fastapi import FastAPI 
+from fastapi.middleware.cors import CORSMiddleware 
+from contextlib import asynccontextmanager
+
+from database import init_db
+from api.routes import search, leads, analyze, outreach, export
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+
 
 app = FastAPI(
-    title="LeadForge AI API",
-    description="AI-powered lead generation and digital presence analyzer",
-    version="1.0.0"
+    title="LeadForge AI",
+    description="Automated lead discovery, website analysis, and AI outreach generation.",
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite dev server
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routes
-app.include_router(search.router)
+app.include_router(search.router, prefix="/api", tags=["Search"])
+app.include_router(leads.router, prefix="/api", tags=["Leads"])
+app.include_router(analyze.router, prefix="/api", tags=["Analyze"])
+app.include_router(outreach.router, prefix="/api", tags=["Outreach"])
+app.include_router(export.router, prefix="/api", tags=["Export"])
+
 
 @app.get("/")
 async def root():
-    return {"message": "LeadForge AI API", "timestamp": datetime.utcnow().isoformat()}
-
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "service": "leadforge-ai-backend"
-    }
-
-@app.get("/api/health/detail")
-async def detailed_health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "service": "leadforge-ai-backend",
-        "version": "1.0.0",
-        "endpoints": {
-            "health": "/api/health",
-            "search": "/api/search",
-            "leads": "/api/leads",
-            "analytics": "/api/analytics"
-        }
-    }
-
-if __name__ == "__main__":
-    port = int(os.getenv("BACKEND_PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    return {"message": "LeadForge AI is running", "docs": "/docs"}
